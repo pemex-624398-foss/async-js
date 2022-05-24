@@ -75,21 +75,38 @@ import GetEmpleadoListQuery from "@/core/use-cases/empleados/get-empleado-list-q
 })
 export default class Example3 extends Vue {
   // Data
+  protected loadInterval?: number;
+  protected loadIntervalTimeout = 10000;
   protected getEmpleadoListQuery = new GetEmpleadoListQuery();
   protected registrarEmpleadoCommand: RegistrarEmpleadoCommand | null = null;
 
   // Methods
   async getEmpleadoList() {
+    if (this.getEmpleadoListQuery.executing) {
+      return;
+    }
+
     try {
+      if (this.loadInterval) {
+        clearInterval(this.loadInterval);
+      }
       await this.getEmpleadoListQuery.executeAsync();
     } catch (error) {
       console.error(error);
+    } finally {
+      this.loadInterval = setInterval(
+        () => this.getEmpleadoList(),
+        this.loadIntervalTimeout
+      );
     }
   }
 
   async registrarEmpleado() {
     try {
       await this.registrarEmpleadoCommand?.executeAsync();
+      this.restablecerRegistroEmpleado();
+
+      await this.getEmpleadoList();
     } catch (error) {
       console.error(error);
     }
