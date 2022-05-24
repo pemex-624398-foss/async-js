@@ -1,17 +1,24 @@
 <template>
   <v-app>
-    <v-app-bar app color="primary" dark flat elevation="1">
+    <v-app-bar app color="primary" dark flat pro elevation="1">
       <v-toolbar-title>Async FOSS</v-toolbar-title>
       <template #extension>
-        <v-tabs icons-and-text fixed-tabs>
+        <v-tabs
+          :icons-and-text="$vuetify.breakpoint.mdAndUp"
+          fixed-tabs
+          show-arrows
+        >
           <v-tab
             v-for="link in links"
             :key="link.code"
             :to="link.target"
             :exact="link.exact || false"
           >
-            <span v-text="link.title" class="mb-3"></span>
-            <v-icon v-if="link.icon" v-text="link.icon"></v-icon>
+            <span v-text="link.title"></span>
+            <v-icon
+              v-if="link.icon && $vuetify.breakpoint.mdAndUp"
+              v-text="link.icon"
+            ></v-icon>
           </v-tab>
         </v-tabs>
       </template>

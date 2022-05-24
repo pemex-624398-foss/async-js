@@ -2,81 +2,75 @@
   <v-row>
     <v-col>
       <v-card>
-        <v-toolbar color="primary" dark flat>
-          <v-toolbar-title>Origen</v-toolbar-title>
-          <v-spacer></v-spacer>
-          <v-btn text @click="moveToTarget">
-            Mover
-            <v-icon right>mdi-arrow-right-thick</v-icon>
-          </v-btn>
+        <v-toolbar color="secondary" dark flat>
+          <v-toolbar-title>Calculadora</v-toolbar-title>
         </v-toolbar>
-        <v-container fluid>
-          <data-record-list :records="sourceRecordList"></data-record-list>
+        <v-container class="pt-10 px-10">
+          <calculator-field-set
+            :operation.sync="calculateCommand.argument.operation"
+            :operand1.sync="calculateCommand.argument.operand1"
+            :operand2.sync="calculateCommand.argument.operand2"
+            :result="result"
+            :result-decimals.sync="resultDecimals"
+            :max-result-decimals="maxResultDecimals"
+            :calculating="calculateCommand.executing"
+            @calculate="calculate"
+          ></calculator-field-set>
+          <v-row v-if="calculateCommand.error">
+            <v-col>
+              <v-alert type="error" color="error" border="bottom">
+                {{ calculateCommand.error.message }}
+              </v-alert>
+            </v-col>
+          </v-row>
         </v-container>
-      </v-card>
-    </v-col>
-    <v-col>
-      <v-card>
-        <v-toolbar color="accent" dark flat>
-          <v-btn text @click="moveToSource">
-            <v-icon left>mdi-arrow-left-thick</v-icon>
-            Mover
-          </v-btn>
-          <v-spacer></v-spacer>
-          <v-toolbar-title>Destino</v-toolbar-title>
-        </v-toolbar>
-        <v-container fluid>
-          <data-record-list :records="targetRecordList"></data-record-list>
-        </v-container>
+
+        <v-snackbar v-model="errorSnackbarVisible" type="error">
+          Error al realizar operación
+        </v-snackbar>
       </v-card>
     </v-col>
   </v-row>
 </template>
 
 <script lang="ts">
-import DataRecord from "@/core/model/data-record";
-import DataRecordList from "@/components/DataRecordList.vue";
-import { Component, Vue } from "vue-property-decorator";
+import { Component, Vue, Watch } from "vue-property-decorator";
+import Heading from "@/components/Heading.vue";
+import CalculateExtendedCommand from "@/core/use-cases/calculator/calculate-extended-command";
+import CalculatorFieldSet from "@/components/calculator/CalculatorFieldSet.vue";
 
 @Component({
   name: "Example2",
-  components: { DataRecordList }
+  components: { CalculatorFieldSet, Heading }
 })
 export default class Example2 extends Vue {
   // Data
-  protected sourceRecordList: Array<DataRecord> = [];
-  protected targetRecordList: Array<DataRecord> = [];
-  protected working = false;
+  protected calculateCommand = new CalculateExtendedCommand();
+  protected result = 0;
+  protected maxResultDecimals = 6;
+  protected resultDecimals = this.maxResultDecimals;
+  protected errorSnackbarVisible = false;
+
+  // Watch
+  @Watch("resultDecimals")
+  onResultDecimalsChanged() {
+    this.formatResult();
+  }
 
   // Methods
-  moveRecord(
-    index: number,
-    sourceList: Array<DataRecord>,
-    targetList: Array<DataRecord>
-  ) {
-    if (index < 0 || index >= sourceList.length) return;
-
-    const record = sourceList[index];
-    sourceList.splice(index, 1);
-    targetList.push(record);
-  }
-
-  moveToTarget() {
-    if (this.working) return;
-  }
-
-  moveToSource() {
-    if (this.working) return;
-  }
-
-  // Hooks
-  mounted() {
-    for (let num = 1; num <= 10; num++) {
-      this.sourceRecordList.push({
-        name: `Registro ${num}`,
-        description: `Elemento número ${num} de la lista`
-      });
+  async calculate() {
+    try {
+      await this.calculateCommand.executeAsync();
+      this.formatResult();
+    } catch (error) {
+      this.errorSnackbarVisible = true;
     }
+  }
+
+  formatResult() {
+    this.result = Number(
+      this.calculateCommand.result?.toFixed(this.resultDecimals)
+    );
   }
 }
 </script>

@@ -23,9 +23,6 @@ const state: NavigationState = {
         subtitle: "Calculator with Promises"
       },
       {
-        subtitle: "Promises Do's & Don't's"
-      },
-      {
         subtitle: "Promises & The Backend"
       }
     ].map((link, index) => ({
@@ -33,7 +30,7 @@ const state: NavigationState = {
       code: `example${index + 1}`,
       title: `Ejemplo #${index + 1}`,
       icon: `mdi-numeric-${index + 1}-circle-outline`,
-      target: { name: "example", params: { id: "1" } }
+      target: { name: "example", params: { id: String(index + 1) } }
     }))
   ]
 };

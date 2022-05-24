@@ -2,45 +2,19 @@
   <v-row>
     <v-col>
       <v-card>
-        <v-container>
-          <v-row>
-            <v-col>
-              <v-text-field
-                v-model="a"
-                type="number"
-                label="A"
-                outlined
-              ></v-text-field>
-            </v-col>
-            <v-col>
-              <v-select
-                v-model="operation"
-                :items="operations"
-                label="Operación"
-                outlined
-              ></v-select>
-            </v-col>
-            <v-col>
-              <v-text-field
-                v-model="b"
-                type="number"
-                label="B"
-                outlined
-              ></v-text-field>
-            </v-col>
-            <v-col class="shrink">
-              <v-btn color="accent" x-large block @click="execute">=</v-btn>
-            </v-col>
-            <v-col>
-              <v-text-field
-                v-model="result"
-                type="number"
-                readonly
-                label="Resultado"
-                outlined
-              ></v-text-field>
-            </v-col>
-          </v-row>
+        <v-toolbar color="secondary" dark flat>
+          <v-toolbar-title>Calculadora</v-toolbar-title>
+        </v-toolbar>
+        <v-container class="pt-10 px-10">
+          <calculator-field-set
+            :operation.sync="calculateCommand.argument.operation"
+            :operand1.sync="calculateCommand.argument.operand1"
+            :operand2.sync="calculateCommand.argument.operand2"
+            :result="result"
+            :result-decimals.sync="resultDecimals"
+            :max-result-decimals="maxResultDecimals"
+            @calculate="calculate"
+          ></calculator-field-set>
           <v-row v-if="error">
             <v-col>
               <v-alert type="error" color="error" border="bottom">
@@ -55,73 +29,48 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from "vue-property-decorator";
+import { Component, Vue, Watch } from "vue-property-decorator";
 import Heading from "@/components/Heading.vue";
-import DataRecordList from "@/components/DataRecordList.vue";
-import CalculatorOperation from "@/core/model/calculator-operation";
-import CalculateCommand from "@/core/use-cases/calculate-command";
-import CalculationError from "@/core/model/calculation-error";
+import CalculateCommand from "@/core/use-cases/calculator/calculate-command";
+import CalculatorFieldSet from "@/components/calculator/CalculatorFieldSet.vue";
 
 @Component({
   name: "Example1",
-  components: { DataRecordList, Heading }
+  components: { CalculatorFieldSet, Heading }
 })
 export default class Example1 extends Vue {
   // Data
-  protected a: string | null = null;
-  protected b: string | null = null;
-  protected operations: Array<{ value: CalculatorOperation; text: string }> =
-    [];
-  protected operation: CalculatorOperation | null = null;
-  protected result: number | null = null;
-  protected error: CalculationError | any | null = null;
-  protected command = new CalculateCommand();
+  protected calculateCommand = new CalculateCommand();
+  protected result = 0;
+  protected maxResultDecimals = 6;
+  protected resultDecimals = this.maxResultDecimals;
+  protected error: any = null;
 
-  // Methods
-  execute() {
-    const { a, b, operation } = this;
-    if (!operation) return;
-
-    this.error = null;
-
-    this.command.execute(
-      {
-        a: Number(a),
-        b: Number(b),
-        operation
-      },
-      (error, result) => {
-        if (error) {
-          this.error = error;
-          return;
-        }
-
-        this.result = result || null;
-      }
-    );
+  // Watch
+  @Watch("resultDecimals")
+  onResultDecimalsChanged() {
+    this.formatResult();
   }
 
-  // Hooks
-  mounted() {
-    this.operations.push(
-      {
-        value: CalculatorOperation.Addition,
-        text: "Suma"
-      },
-      {
-        value: CalculatorOperation.Subtraction,
-        text: "Resta"
-      },
-      {
-        value: CalculatorOperation.Multiplication,
-        text: "Multiplicación"
-      },
-      {
-        value: CalculatorOperation.Division,
-        text: "División"
+  // Methods
+  calculate() {
+    this.error = null;
+
+    this.calculateCommand.execute((error) => {
+      if (error) {
+        this.error = error;
+        this.result = NaN;
+        return;
       }
+
+      this.formatResult();
+    });
+  }
+
+  formatResult() {
+    this.result = Number(
+      this.calculateCommand.result?.toFixed(this.resultDecimals)
     );
-    this.operation = CalculatorOperation.Addition;
   }
 }
 </script>
